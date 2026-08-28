@@ -179,3 +179,21 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Python Extras
+
+.venv/
+
+
+# IntelliJ / JetBrains
+.idea/
+*.iml
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Model weights and other large generated files
+*.pt
+*.onnx
+*.engine
