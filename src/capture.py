@@ -44,11 +44,15 @@ def main():
                 print("read failed")
                 break
             frames += 1
+            cv2.imshow("capture", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
             if frames % 30 == 0:
                 print(f"frames: {frames}")
     except KeyboardInterrupt:
         print("\nstopped")
     finally:
+        cv2.destroyAllWindows()
         cap.release()
 
 
