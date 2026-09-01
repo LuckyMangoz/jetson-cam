@@ -12,6 +12,11 @@ WIDTH = 1280
 HEIGHT = 720
 TARGET_FPS = 30
 
+MAX_FAILURES = 30
+RECONNECT_DELAY = 2.0
+
+
+
 
 def open_camera(device, width, height, fps):
     cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
@@ -37,24 +42,36 @@ def main():
 
     args = parser.parse_args()
 
-
-    cap = open_camera(DEVICE, WIDTH, HEIGHT, TARGET_FPS)
-    if cap is None:
-        print(f"Could not open {DEVICE}")
-        return
-
-    print(f"actual: {cap.get(cv2.CAP_PROP_FRAME_WIDTH):.0f}"
-          f"x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT):.0f}"
-          f" @ {cap.get(cv2.CAP_PROP_FPS):.0f}fps")
-
+    cap = None
     frames = 0
+    consecutive_failures = 0
+
     try:
         while True:
-            ok, frame = cap.read()
-            if not ok:
-                print("read failed")
-                break
+            if cap is None:
+                cap = open_camera(DEVICE, WIDTH, HEIGHT, TARGET_FPS)
+                if cap is None:
+                    print(f"waiting for {DEVICE}...")
+                    time.sleep(RECONNECT_DELAY)
+                    continue
 
+                print(f"actual: {cap.get(cv2.CAP_PROP_FRAME_WIDTH):.0f}"
+                      f"x{cap.get(cv2.CAP_PROP_FRAME_HEIGHT):.0f}"
+                      f" @ {cap.get(cv2.CAP_PROP_FPS):.0f}fps")
+
+                consecutive_failures = 0
+
+            ret, frame = cap.read()
+
+            if not ret:
+                consecutive_failures += 1
+                if consecutive_failures >= MAX_FAILURES:
+                    print(f"{consecutive_failures} failed reads, reopening")
+                    cap.release()
+                    cap = None
+                continue
+
+            consecutive_failures = 0
             frames += 1
 
             if args.headless:
@@ -73,7 +90,8 @@ def main():
     finally:
         if not args.headless:
             cv2.destroyAllWindows()
-        cap.release()
+        if cap is not None:
+            cap.release()
 
 
 if __name__ == "__main__":
