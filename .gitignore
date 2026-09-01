@@ -189,6 +189,7 @@ cython_debug/
 .idea/
 *.iml
 
+
 # OS junk
 .DS_Store
 Thumbs.db
@@ -197,3 +198,4 @@ Thumbs.db
 *.pt
 *.onnx
 *.engine
+tmp/
