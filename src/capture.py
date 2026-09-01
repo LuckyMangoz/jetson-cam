@@ -27,6 +27,17 @@ def open_camera(device, width, height, fps):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--headless", action="store_true",
+                        help="save periodic frames instead of opening a window")
+
+    # parser.add_argument("--format", default="MJPG", choices=["MJPG", "YUYV"])
+    # parser.add_argument("--width", type=int, default=1280)
+    # parser.add_argument("--height", type=int, default=720)
+
+    args = parser.parse_args()
+
+
     cap = open_camera(DEVICE, WIDTH, HEIGHT, TARGET_FPS)
     if cap is None:
         print(f"Could not open {DEVICE}")
@@ -43,16 +54,25 @@ def main():
             if not ok:
                 print("read failed")
                 break
+
             frames += 1
-            cv2.imshow("capture", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+
+            if args.headless:
+                if frames % 60 == 0:
+                    cv2.imwrite(f"/tmp/frame_{frames:05d}.jpg", frame)
+            else:
+                cv2.imshow("capture", frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+
             if frames % 30 == 0:
                 print(f"frames: {frames}")
+
     except KeyboardInterrupt:
         print("\nstopped")
     finally:
-        cv2.destroyAllWindows()
+        if not args.headless:
+            cv2.destroyAllWindows()
         cap.release()
 
 
