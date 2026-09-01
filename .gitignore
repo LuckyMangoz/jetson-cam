@@ -199,3 +199,4 @@ Thumbs.db
 *.onnx
 *.engine
 tmp/
+scratch/
