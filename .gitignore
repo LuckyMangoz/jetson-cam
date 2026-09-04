@@ -200,3 +200,5 @@ Thumbs.db
 *.engine
 tmp/
 scratch/
+models/
+data/
