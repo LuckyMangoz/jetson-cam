@@ -8,6 +8,9 @@ from collections import deque
 import cv2
 import numpy as np
 
+from src.storage import (open_db, start_session, make_row, flush,
+                         end_session, BATCH_SIZE)
+
 DEVICE = "/dev/video0"
 WIDTH = 1280
 HEIGHT = 720
@@ -70,6 +73,8 @@ def load_network(use_cuda):
         net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 
     return net
+
+
 
 
 def open_camera(device, width, height, fps):
@@ -224,6 +229,12 @@ def main():
     output_layers = net.getUnconnectedOutLayersNames()
     print(f"model loaded, {len(class_names)} classes")
 
+    connection = open_db()
+    session_id = start_session(connection, "yolov4-tiny",
+    f"{WIDTH}x{HEIGHT}", args.threshold)
+    pending = []
+    print(f"session {session_id}")
+
     cap = None
     frame_count = 0
     consecutive_failures = 0
@@ -270,6 +281,12 @@ def main():
                                     args.threshold, args.person_only)
                 detect_times.append(time.monotonic_ns() - started)
 
+                for detection in detections:
+                    pending.append(make_row(session_id, frame_count, detection))
+
+                    if len(pending) >= BATCH_SIZE:
+                        flush(connection, pending)
+
             draw_detections(frame, detections)
 
             if args.headless:
@@ -292,6 +309,9 @@ def main():
         print("\nstopped")
 
     finally:
+        end_session(connection, session_id, pending)
+        connection.close()
+
         if not args.headless:
             cv2.destroyAllWindows()
         if cap is not None:
